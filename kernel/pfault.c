@@ -161,7 +161,7 @@ void page_fault_handler(void)
       copy_on_write();
       goto out;
     }
-    printf("\nhello world 1\n");
+    
     /* Check if the fault address is a heap page. Use p->heap_tracker */
     bool isPageHeap = false;
     int position = -1;
@@ -169,7 +169,7 @@ void page_fault_handler(void)
       setkilled(p);
       return;
     }
-    printf("\nhello world 1\n");
+    
     for (int i = 0; i < MAXHEAP; i++)
     {
       // printf("\n heap tracker -> %x, faulting_addr -> %x\n",p->heap_tracker[i].addr, faulting_addr);
@@ -182,7 +182,6 @@ void page_fault_handler(void)
       }
       /* code */
     }
-    printf("\nhello world 1\n");
     if(isPageHeap && p->heap_tracker[position].loaded == true) {
       // printf("\nPFAULT: load from disc\n");
       load_from_disk = true;
@@ -190,11 +189,8 @@ void page_fault_handler(void)
     
     
     if (isPageHeap) {
-        printf("\ngoing into heap tracker\n");
-        // goto heap_handle;
         goto heap_handle;
     }
-    printf("\nhello world 1\n");
     /* If it came here, it is a page from the program binary that we must load. */
 
 /* tryout area start*/
