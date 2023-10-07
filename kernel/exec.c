@@ -53,11 +53,9 @@ exec(char *path, char **argv)
   ilock(ip);
 
   // Check ELF header
-  // printf("Step0 before: %d %d %s\n", elf.phnum, elf.phoff, path);
 
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
-  // printf("Step0 after: %d %d \n", elf.phnum, elf.phoff);
 
   if(elf.magic != ELF_MAGIC)
     goto bad;
@@ -65,8 +63,6 @@ exec(char *path, char **argv)
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
   cow_init();
-  // printf("\n\n page tables %s %x %x\n\n", p->name, pagetable, p->pagetable);
-  printf("\n EXEC: starting uvmalloc for %s with pid- %d\n", path, p->pid);
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
@@ -80,20 +76,14 @@ exec(char *path, char **argv)
         goto bad;
       if (ph.vaddr % PGSIZE != 0)
         goto bad;
-      // printf("\n EXEC: starting uvmalloc for %s\n", path);
-      // printf("\nEXEC: for loop %d: parameters going into loadseg -> pagetable = %x, phvaddr = %x, ph.memsz = %d, sz = %d, ph.filesz = %d \n", i, pagetable,ph.vaddr, ph.memsz, sz, ph.filesz);
-      uint64 sz1;
+    uint64 sz1;
       if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
         goto bad;
       sz = sz1;
-      // printf("\nEXEC: starting loadseg for %s\n", path);
-      // printf("\nEXEC: for loop %d: parameters going into loadseg -> pagetable = %x, phvaddr = %x,ph.off = %d, ph.memsz = %d, sz = %d, ph.filesz= %d \n",  i,pagetable,ph.vaddr, ph.off, ph.memsz, sz, ph.filesz);
       if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
-      // printf("loop post load seg %d: phvaddr = %d, phoff = %d,ph.off = %d, ph.memsz = %d, sz = %d, ph.filesz = %d \n", i,ph.vaddr, elf.phoff, ph.off, ph.memsz, sz, ph.filesz);
 
   } else {
-    // sz+=ph.memsz;
     sz+= PGSIZE;
     print_skip_section(path, ph.vaddr, ph.memsz);
   }
@@ -112,18 +102,12 @@ exec(char *path, char **argv)
   // Use the second as the user stack.
   sz = PGROUNDUP(sz);
   uint64 sz1;
-    // printf("process getting executed 2");
-  // printf("\nEXEC: sz =%x\n", sz);
-  // printf("\nEXEC: hello world 1\n");
   if((sz1 = uvmalloc(pagetable, sz, sz + 2*PGSIZE, PTE_W)) == 0)
     goto bad;
   sz = sz1;
   uvmclear(pagetable, sz-2*PGSIZE);
   sp = sz;
   stackbase = sp - PGSIZE;
-  // printf("\nEXEC: hello world 2\n");
-  // printf("process getting executed 3");
-  // printf("\nEXEC: sz =%x, stackbase=%x \n", sp, stackbase);
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
@@ -137,7 +121,6 @@ exec(char *path, char **argv)
     ustack[argc] = sp;
   }
   ustack[argc] = 0;
-  // printf("\nEXEC: hello world 3\n");
   // push the array of argv[] pointers.
   sp -= (argc+1) * sizeof(uint64);
   sp -= sp % 16;
@@ -150,13 +133,11 @@ exec(char *path, char **argv)
   // argc is returned via the system call return
   // value, which goes in a0.
   p->trapframe->a1 = sp;
-  // printf("\nEXEC: hello world 4\n");
   // Save program name for debugging.
   for(last=s=path; *s; s++)
     if(*s == '/')
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
-  // printf("\nEXEC: hello world 5\n");
   // Commit to the user image.
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
@@ -165,7 +146,6 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
-  // printf("\nEXEC: hello world 6\n");
   // CSE 536: Clear all heap track regions
   for (int i = 0; i < MAXHEAP; i++) {
     p->heap_tracker[i].addr            = 0xFFFFFFFFFFFFFFFF;
@@ -174,8 +154,7 @@ exec(char *path, char **argv)
     p->heap_tracker[i].loaded          = false;
   }
   p->resident_heap_pages = 0;
-  // printf("\n\nEXEC: reaches till the ned\n\n");
-  // printf("\nEXEC: hello world 7\n");
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
@@ -198,11 +177,8 @@ loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz
 {
   uint i, n;
   uint64 pa;
-  // printf("\nLOADSEG: starting va=%x\n",va);
   for(i = 0; i < sz; i += PGSIZE){
     pa = walkaddr(pagetable, va + i);
-    //SID CHANGES
-    // printf("\nLOADSEG: result address - %x, va+i = %x\n", pa, va+i);
     if(pa == 0)
       panic("loadseg: address should exist");
     if(sz - i < PGSIZE)

@@ -57,31 +57,23 @@ void evict_page_to_disk(struct proc* p) {
     }
     
     /* Print statement. */
-    printf("\n EVICT CUSTOM: blockno -> %d \n", blockno);
     print_evict_page(p->heap_tracker[page_index].addr, blockno);
     /* Read memory from the user to kernel memory first. */
     char *kpage;
     kpage = kalloc();
-    // printf("\nEVICT: pagetable: %x, temp_page -> %s, heap_page_addr -> %x\n", p->pagetable, kpage, p->heap_tracker[page_index].addr);
     int result = copyin(p->pagetable, kpage, p->heap_tracker[page_index].addr, PGSIZE);
     if (result == -1) {
-      // printf("\nEVICT: copyin failed\n");
       return;
     }
     /* Write to the disk blocks. Below is a template as to how this works. There is
      * definitely a better way but this works for now. :p */
-    // TODO CHECK SID: place where something could go wrong
     struct buf* b;
-    // uint64 start = (uint64) kpage;
-    // printf("\nEVICT: address = %s\n", kpage);
-    // setkilled(p);
+
     for(int i = blockno; i < blockno+4; ++i) {
     
     b = bread(1, PSASTART + i);
-    // printf("EVICT: block %d", i)
-    // Copy page contents to b.data using memmove.
+
     memmove(b->data, ((uint64)kpage) +((i-blockno)*BSIZE), (BSIZE));
-    // printf("\nEVICT: %s, %d, %s\n", b->data, b->valid);
     bwrite(b);
     brelse(b);
     psa_tracker[i] = true;
@@ -94,7 +86,6 @@ void evict_page_to_disk(struct proc* p) {
     /* Update the resident heap tracker. */
     p->resident_heap_pages-=1;
     p->heap_tracker[page_index].last_load_time = 0xFFFFFFFFFFFFFFFF;
-    // p->heap_tracker[page_index].loaded = false;
 }
 
 /* Retrieve faulted page from disk. */
@@ -103,9 +94,7 @@ void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
     int page_position = -1;
     for (int i = 0; i < MAXHEAP; i++)
     { 
-      // printf("\n heap tracker -> %x, faulting_addr -> %x\n",p->heap_tracker[i].addr, faulting_addr);
       if(uvaddr != 0 && p->heap_tracker[i].addr == uvaddr) {
-        // printf("\n heap tracker -> %x, faulting_addr -> %x\n",p->heap_tracker[i].addr, faulting_addr);
         page_position = i;
         break;
       }
@@ -123,16 +112,10 @@ void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
   for(int i = blockno; i < blockno+4; ++i) {  
     struct buf* b;
     b = bread(1, PSASTART+(i));
-    printf("RETRIEVE: n->valid = %d, b->data = %s", b->valid, b->data);
-    // Copy page contents to b.data using memmove.
-    // (uint64)pa
     memmove(((uint64)kpage) +((i-blockno)*(BSIZE)), b->data, (BSIZE));
-    // bwrite(b);
     brelse(b);
     }
-    /* Copy from temp kernel page to uvaddr (use copyout) */
     copyout(p->pagetable,uvaddr, kpage, PGSIZE);
-    // p->heap_tracker[page_position].loaded = true;
 }
 
 void page_fault_handler(void) 
@@ -147,17 +130,10 @@ void page_fault_handler(void)
     /* Find faulting address. */
     uint64 stval = r_stval();
     uint64 faulting_addr = PGROUNDDOWN(r_stval());
-    // printf("\n%x\n", stval);
     print_page_fault(p->name, faulting_addr);
-  //       pagetable_t pagetable1 = 0x0;
-  // if((pagetable1 = proc_pagetable(p)) == 0)
-  //   goto out;
-  //   /*tryout area end*/
-  //   int sz1;
-  //   sz1 = uvmalloc(pagetable1, faulting_addr, PGSIZE, PTE_W);
+
 
     if(p->cow_enabled && r_scause() == 15) {
-      // printf("\nTRAP: entered if %d and pid = %d\n", r_scause(), p->pid);
       copy_on_write();
       goto out;
     }
@@ -172,18 +148,14 @@ void page_fault_handler(void)
     
     for (int i = 0; i < MAXHEAP; i++)
     {
-      // printf("\n heap tracker -> %x, faulting_addr -> %x\n",p->heap_tracker[i].addr, faulting_addr);
       if(faulting_addr != 0 && p->heap_tracker[i].addr == faulting_addr) {
-        // printf("\n heap tracker -> %x, faulting_addr -> %x\n",p->heap_tracker[i].addr, faulting_addr);
         isPageHeap = true;
         position = i;
-        // printf("EXEC: check load disk %d", p->heap_tracker[position].startblock);
         break;
       }
       /* code */
     }
     if(isPageHeap && p->heap_tracker[position].loaded == true) {
-      // printf("\nPFAULT: load from disc\n");
       load_from_disk = true;
     }
     
@@ -204,7 +176,6 @@ void page_fault_handler(void)
     //trying something new here
     pagetable_t pagetable = 0x0, oldpagetable;
     begin_op();
-    // printf("\nprog name %s and prog size %d\n", p->name, p->sz);
     if((ip = namei(p->name)) == 0){
     end_op();
     return -1;
@@ -214,14 +185,9 @@ void page_fault_handler(void)
     if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto out;
 
-    // if((pagetable = proc_pagetable(p)) == 0)
-    // goto out;
-
-    // printf("\npage address = %x %x\n", pagetable, p->pagetable);
     init_psa_regions();
     cow_init();
     for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
-    // printf("loop start: phnum = %d, phoff = %d, i= %d, off=%d  \n", elf.phnum, elf.phoff,i,off);
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
       goto out;
     
@@ -241,18 +207,13 @@ void page_fault_handler(void)
       goto out;
       }
 
-        // printf("\n\nloop if condition: vaddr = %d, faulding_addr = %d, i= %d, memsz=%d  \n", ph.vaddr, faulting_addr,i,ph.memsz);
-      // printf("\nloop %d: elf.entry=%x, trapframe_entry=%x, phvaddr = %x, phoff = %d, ph.off = %d, ph.memsz = %d, sz = %d  \n", i, elf.entry, p->trapframe->epc,ph.vaddr, elf.phoff, ph.off, ph.memsz, sz);
-
     if (faulting_addr >= ph.vaddr && faulting_addr < (ph.vaddr + ph.memsz)) {
         uint64 sz1;
-        // printf("loop1 %d: phvaddr = %x, phoff = %d,ph.off = %d, ph.memsz = %d, sz = %d  \n", i,ph.vaddr, elf.phoff, ph.off, ph.memsz, sz);
         if ((sz1 = uvmalloc(p->pagetable, ph.vaddr, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0){
         printf("uv malloc failed");
         goto out;
         }
 
-        // printf("%d", sz1);
         sz = sz1;
         // printf("loop intermediate: vaddr = %d, sz = %d, ph.memsz= %d\n\n", ph.vaddr, sz,ph.memsz);
         // printf("loop2 %d: phvaddr = %d, phoff = %d,ph.off = %d, ph.memsz = %d, sz = %d  \n", i,ph.vaddr, elf.phoff, ph.off, ph.memsz, sz);
@@ -287,20 +248,19 @@ heap_handle:
           isHeapFull = true;
     }
     if (p->resident_heap_pages == MAXRESHEAP && !isHeapFull) {
-      // printf("Heap full!\n");
         evict_page_to_disk(p);
     }
 
     /* 2.3: Map a heap page into the process' address space. (Hint: check growproc) */
     
     if(sz = uvmalloc(p->pagetable, faulting_addr, faulting_addr + PGSIZE, PTE_W) == 0) {
-      printf("\nGROWPROC: allocation failing\n");
       return -1;
     }
 
     /* 2.4: Update the last load time for the loaded heap page in p->heap_tracker. */
     if (position == -1) {
       printf("EXEC: illegal position");
+      panic("illegal position within array");
     }
 
     p->heap_tracker[position].last_load_time = read_current_timestamp();

@@ -107,7 +107,6 @@ int
 fileread(struct file *f, uint64 addr, int n)
 {
   int r = 0;
-  // printf("\nFILEREAD: %x, %x, %d \n", f, addr, n);
   struct proc *pr = myproc();
   pte_t *pte;
   if((pte = walk(pr->pagetable, PGROUNDDOWN(addr), 0)) == 0)
