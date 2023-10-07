@@ -388,7 +388,6 @@ fork(int cow_enabled)
   // Set the appropriate metadata to track a CoW group
   // printf("\nFORK: creating group %d %d\n", p->pid, p->cow_group);
   if(cow_enabled) {
-    printf("\nFORK: creating cow_enabled group %d %d\n", p->pid, p->cow_group);
     np->cow_enabled = 1;
     // np->cow_group = p->pid;
     np->cow_group = p->cow_group;
@@ -400,11 +399,7 @@ fork(int cow_enabled)
     // }  
     // cow_group_init(np->cow_group);
   } 
-  // else {
-  //   np->cow_group = np->pid;
-  //   np->cow_enabled = 0;
-  // }
-  printf("\nFORK: creating cow_enabled group pid = %d, p_cow = %d, np_cow = %d, p->enabled = %d, np->enabled= %d\n", p->pid, p->cow_group, np->cow_group, p->cow_enabled, np->cow_enabled);
+
 
   // printf("\nFORK: created group %d %d\n", p->pid, p->cow_group);
   // implement and call the uvm_copy() function defined in cow.c

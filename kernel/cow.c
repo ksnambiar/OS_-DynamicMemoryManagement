@@ -127,7 +127,6 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
   }
     incr_cow_group_count(p->cow_group);
 
-    // printf("\nCREATED PROCESS: cow_group: %d, pid = %d\n", p->cow_group, get_cow_group_count(p->cow_group));
     return 0;
 
 err:

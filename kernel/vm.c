@@ -313,23 +313,9 @@ freewalk(pagetable_t pagetable)
 void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
-  // struct proc *p = myproc();
-  // printf("\nUVMFREE: entered %d and cow grup = %d, enabled = %d \n", p->pid, p->cow_group, p->cow_enabled);
-
   if(sz > 0){
-    // if(p->cow_enabled == 1 && get_cow_group(p->cow_group) != 0) {
-    //   printf("\nUVMFREE: if condiiton\n");      
-    //   for(int i = 0; i < sz; i+=PGSIZE){
-    //       pte_t *pte;
-    //       pte = walk(p->pagetable, i, 0);
-    //       uint64 pa = PTE2PA(*pte);
-    //       int shouldRemove = get_cow_group_count(p->cow_group) == 1 ? 1 : is_shmem(p->cow_group, pa);
-    //       uvmunmap(pagetable, i, 1, shouldRemove == 1 ? 0 : 1);
-    //   }
-    // } else {
-      // printf("\nUVMFREE: else\n");
+    
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
-    // } 
   }   
   freewalk(pagetable);
 }
@@ -337,7 +323,6 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 void uvmfree_cow(pagetable_t pagetable, uint64 sz, int cow_id) {
   // printf("\nUVMFREE: entered %d and cow grup = %d, enabled = %d \n", p->pid, p->cow_group, p->cow_enabled)
   if(sz > 0){
-      printf("\nUVMFREE: if condiiton\n");      
       for(int i = 0; i < sz; i+=PGSIZE){
           pte_t *pte;
           pte = walk(pagetable, i, 0);
